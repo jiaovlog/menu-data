@@ -16,6 +16,7 @@ function validateData(data) {
 }
 
 export const dataMode = import.meta.env.VITE_DATA_MODE === 'remote' ? 'remote' : 'local'
+const API_URL = import.meta.env.VITE_API_URL?.trim() || '/api/data'
 
 export function getAccessKey() {
   return localStorage.getItem(ACCESS_KEY) || ''
@@ -36,7 +37,7 @@ export async function loadData() {
     return { data: validateData(JSON.parse(stored)), revision: `local-${Date.now()}` }
   }
 
-  const response = await fetch('/api/data', {
+  const response = await fetch(API_URL, {
     headers: { 'X-App-Key': getAccessKey() }
   })
   const payload = await response.json().catch(() => ({}))
@@ -51,7 +52,7 @@ export async function saveData(data, revision) {
     return { revision: `local-${Date.now()}` }
   }
 
-  const response = await fetch('/api/data', {
+  const response = await fetch(API_URL, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

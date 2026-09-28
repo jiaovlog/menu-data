@@ -197,7 +197,7 @@ onMounted(refresh)
 
     <ModalDialog v-if="settingsOpen" title="数据与设置" @close="settingsOpen = false">
       <form class="form-stack" @submit.prevent="saveSettings">
-        <div class="setting-mode"><component :is="dataMode === 'remote' ? Wifi : WifiOff" :size="20" /><div><strong>{{ dataMode === 'remote' ? '远程同步模式' : '本机模式' }}</strong><span>{{ dataMode === 'remote' ? '通过边缘函数同步 Gitee 文件' : '数据仅保存在当前浏览器' }}</span></div></div>
+        <div class="setting-mode"><component :is="dataMode === 'remote' ? Wifi : WifiOff" :size="20" /><div><strong>{{ dataMode === 'remote' ? '远程同步模式' : '本机模式' }}</strong><span>{{ dataMode === 'remote' ? '通过 Worker 同步 GitHub 文件' : '数据仅保存在当前浏览器' }}</span></div></div>
         <label v-if="dataMode === 'remote'" class="field"><span>访问密钥</span><div class="input-with-icon"><KeyRound :size="18" /><input v-model="accessKey" type="password" autocomplete="current-password" placeholder="APP_ACCESS_KEY" /></div></label>
         <div class="backup-actions"><button class="button" type="button" @click="downloadBackup(state.data)"><Download :size="17" />导出备份</button><button class="button" type="button" @click="importInput.click()"><Upload :size="17" />导入备份</button><input ref="importInput" class="sr-only" type="file" accept="application/json,.json" @change="importBackup" /></div>
         <div class="form-actions"><button class="button" type="button" @click="settingsOpen = false">关闭</button><button v-if="dataMode === 'remote'" class="button button--primary" type="submit">保存并刷新</button></div>

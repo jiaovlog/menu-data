@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "menu-data-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-28",
+  "vars": {
+    "GITHUB_OWNER": "jiaovlog",
+    "GITHUB_REPO": "menu-data-store",
+    "GITHUB_BRANCH": "main",
+    "ALLOWED_ORIGIN": "https://jiaovlog.github.io"
+  }
+}
