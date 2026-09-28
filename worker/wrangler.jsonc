@@ -3,6 +3,7 @@
   "name": "menu-data-api",
   "main": "src/index.js",
   "compatibility_date": "2026-09-28",
+  "preview_urls": false,
   "vars": {
     "GITHUB_OWNER": "jiaovlog",
     "GITHUB_REPO": "menu-data-store",
