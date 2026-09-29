@@ -150,17 +150,6 @@ const wait = Number(readArg('wait', 2500))
 const clickText = readArg('click-text', '')
 if (shot || hasFlag('click') || clickText) await new Promise((resolve) => setTimeout(resolve, wait))
 
-// --click "#id" / ".selector"：截图前先点一下，方便预览弹窗之类的界面
-if (hasFlag('click')) {
-  const selector = readArg('click', '')
-  const result = await client.send('Runtime.evaluate', {
-    expression: `(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node) return 'not-found'; node.click(); return 'clicked' })()`,
-    returnByValue: true
-  })
-  console.log(`点击 ${selector}：${result.result?.value}`)
-  await new Promise((resolve) => setTimeout(resolve, 800))
-}
-
 // --click-text "确定访问"：按文字点按钮（例如 CloudBase 默认测试域名的访问提示页）。
 // 用 CDP 派发真实鼠标事件，页面要求真实点击时也能生效。
 if (clickText) {
@@ -194,6 +183,17 @@ if (clickText) {
     console.log(`点击「${clickText}」（${point.tag}）于 ${Math.round(point.x)},${Math.round(point.y)}`)
     await new Promise((resolve) => setTimeout(resolve, Number(readArg('wait-after-click', 4000))))
   }
+}
+
+// --click "#id" / ".selector"：截图前再点一下，例如切到某个页签
+if (hasFlag('click')) {
+  const selector = readArg('click', '')
+  const result = await client.send('Runtime.evaluate', {
+    expression: `(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node) return 'not-found'; node.click(); return 'clicked' })()`,
+    returnByValue: true
+  })
+  console.log(`点击 ${selector}：${result.result?.value}`)
+  await new Promise((resolve) => setTimeout(resolve, 900))
 }
 
 if (shot) {

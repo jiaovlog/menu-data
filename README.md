@@ -100,7 +100,7 @@ npm run deploy:web   -- --env-id <envId>                   # 只更新前端
 | 运行时 | `Nodejs18.15` | 见 [cloudbaserc.json](./cloudbaserc.json) |
 | 入口 | `index.main` | |
 | 环境变量 `APP_ACCESS_KEY` | 自定义访问密钥 | 前端“数据与设置”里要填同一个值；由部署脚本生成，不写入仓库 |
-| 环境变量 `ALLOWED_ORIGIN` | 默认 `*` | 允许跨域的来源，多个用英文逗号分隔；生产建议改成静态托管域名 |
+| 环境变量 `ALLOWED_ORIGIN` | 静态托管域名 | 允许跨域的来源，多个用英文逗号分隔，`*` 表示不限制；部署脚本默认取静态托管域名，换自定义域名时用 `--allowed-origin` 覆盖 |
 | HTTP 访问路径 | `/menuApi` | 由 `tcb fn deploy --path` 创建 |
 
 数据库集合（`menu_dishes` / `menu_ingredients` / `menu_recipes` / `menu_orders` / `menu_meta`）
