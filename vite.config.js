@@ -1,6 +1,10 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import { cloudbaseLocalApi } from './dev/cloudbaseLocalApi.js'
+
+const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
 function normalizeBase(value) {
   const base = value?.trim() || '/'
@@ -12,8 +16,13 @@ export default defineConfig(() => {
 
   return {
     base,
+    server: {
+      // .local 存放本地文档库和浏览器预览文件，不需要热更新监听
+      watch: { ignored: ['**/.local/**', '**/cloudbase/local/**'] }
+    },
     plugins: [
       vue(),
+      cloudbaseLocalApi({ root: projectRoot }),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'],
@@ -51,7 +60,8 @@ export default defineConfig(() => {
         workbox: {
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.pathname.endsWith('/api/data'),
+              // 云函数接口不进入 PWA 缓存，避免手机读到旧的配菜数据
+              urlPattern: ({ url }) => url.pathname.startsWith('/api') || url.pathname.includes('/menuApi'),
               handler: 'NetworkOnly'
             }
           ]

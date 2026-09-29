@@ -1,0 +1,14 @@
+{
+  "name": "menu-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "menu-data 云函数：腾讯云 CloudBase 文档型数据库读写接口",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "vitest run --root ../.."
+  },
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.0.0"
+  }
+}

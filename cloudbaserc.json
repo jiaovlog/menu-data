@@ -1,0 +1,19 @@
+{
+  "envId": "your-env-id",
+  "functionRoot": "cloudbase/functions",
+  "functions": [
+    {
+      "name": "menuApi",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "timeout": 20,
+      "memorySize": 256,
+      "installDependency": true,
+      "description": "menu-data 配菜管理数据接口（CloudBase 文档型数据库）",
+      "ignore": ["node_modules/**", "**/*.test.js"],
+      "envVariables": {
+        "ALLOWED_ORIGIN": "*"
+      }
+    }
+  ]
+}

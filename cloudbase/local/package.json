@@ -1,0 +1,6 @@
+{
+  "name": "menu-data-cloudbase-local",
+  "private": true,
+  "description": "本地开发用的文档库模拟层（不部署到云端）",
+  "type": "commonjs"
+}

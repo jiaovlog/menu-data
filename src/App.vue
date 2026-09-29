@@ -8,7 +8,7 @@ import RecipesPage from './pages/RecipesPage.vue'
 import OrdersPage from './pages/OrdersPage.vue'
 import ShoppingPage from './pages/ShoppingPage.vue'
 import { EMPTY_DATA } from './lib/defaultData.js'
-import { dataMode, downloadBackup, getAccessKey, loadData, parseBackup, saveData, setAccessKey } from './lib/dataClient.js'
+import { apiEndpoint, cloudEnvId, dataMode, downloadBackup, getAccessKey, loadData, parseBackup, saveData, setAccessKey, testConnection } from './lib/dataClient.js'
 import { makeId } from './lib/ids.js'
 
 const tabs = [
@@ -25,6 +25,7 @@ const settingsOpen = ref(false)
 const accessKey = ref('')
 const importInput = ref(null)
 const state = reactive({ data: structuredClone(EMPTY_DATA), revision: '', loading: true, pending: 0, lastSaved: null })
+const connection = reactive({ testing: false, message: '', type: 'success' })
 const notice = reactive({ show: false, message: '', type: 'success' })
 let noticeTimer
 let saveQueue = Promise.resolve()
@@ -155,8 +156,23 @@ function removeOrder(order) {
 
 function saveSettings() {
   setAccessKey(accessKey.value); settingsOpen.value = false
-  if (dataMode === 'remote') refresh()
+  if (dataMode === 'cloud') refresh()
   else showNotice('设置已保存')
+}
+
+async function runConnectionTest() {
+  setAccessKey(accessKey.value)
+  connection.testing = true; connection.message = ''
+  try {
+    const result = await testConnection()
+    connection.type = 'success'
+    connection.message = `连接成功，云端版本号 ${result.revision}，菜品 ${result.data.dishes.length} 道、订单 ${result.data.orders.length} 张`
+  } catch (error) {
+    connection.type = 'error'
+    connection.message = error.message
+  } finally {
+    connection.testing = false
+  }
 }
 
 async function importBackup(event) {
@@ -172,7 +188,7 @@ async function importBackup(event) {
   finally { event.target.value = '' }
 }
 
-function openSettings() { accessKey.value = getAccessKey(); settingsOpen.value = true }
+function openSettings() { accessKey.value = getAccessKey(); connection.message = ''; settingsOpen.value = true }
 function changeTab(id) { activeTab.value = id; navOpen.value = false }
 
 onMounted(refresh)
@@ -183,7 +199,7 @@ onMounted(refresh)
     <aside class="sidebar" :class="{ 'sidebar--open': navOpen }">
       <div class="brand"><div class="brand__mark"><BookOpen :size="22" /></div><div><strong>配菜管理</strong><span>MENU DATA</span></div><button class="icon-button sidebar__close" type="button" aria-label="关闭菜单" @click="navOpen = false"><X :size="20" /></button></div>
       <nav class="side-nav" aria-label="主导航"><button v-for="tab in tabs" :key="tab.id" :class="{ active: activeTab === tab.id }" type="button" @click="changeTab(tab.id)"><component :is="tab.icon" :size="19" /><span>{{ tab.label }}</span></button></nav>
-      <div class="sidebar__foot"><div class="sync-state"><component :is="dataMode === 'remote' ? Wifi : WifiOff" :size="16" /><span>{{ dataMode === 'remote' ? '远程同步' : '本机数据' }}</span></div><button class="side-settings" type="button" @click="openSettings"><Settings :size="18" />数据与设置</button></div>
+      <div class="sidebar__foot"><div class="sync-state"><component :is="dataMode === 'cloud' ? Wifi : WifiOff" :size="16" /><span>{{ dataMode === 'cloud' ? '云端同步' : '本机数据' }}</span></div><button class="side-settings" type="button" @click="openSettings"><Settings :size="18" />数据与设置</button></div>
     </aside>
     <div v-if="navOpen" class="nav-scrim" @click="navOpen = false" />
 
@@ -197,10 +213,12 @@ onMounted(refresh)
 
     <ModalDialog v-if="settingsOpen" title="数据与设置" @close="settingsOpen = false">
       <form class="form-stack" @submit.prevent="saveSettings">
-        <div class="setting-mode"><component :is="dataMode === 'remote' ? Wifi : WifiOff" :size="20" /><div><strong>{{ dataMode === 'remote' ? '远程同步模式' : '本机模式' }}</strong><span>{{ dataMode === 'remote' ? '通过 Worker 同步 GitHub 文件' : '数据仅保存在当前浏览器' }}</span></div></div>
-        <label v-if="dataMode === 'remote'" class="field"><span>访问密钥</span><div class="input-with-icon"><KeyRound :size="18" /><input v-model="accessKey" type="password" autocomplete="current-password" placeholder="APP_ACCESS_KEY" /></div></label>
+        <div class="setting-mode"><component :is="dataMode === 'cloud' ? Wifi : WifiOff" :size="20" /><div><strong>{{ dataMode === 'cloud' ? '云端同步模式' : '本机模式' }}</strong><span>{{ dataMode === 'cloud' ? '腾讯云 CloudBase 云函数 + 文档型数据库' : '数据仅保存在当前浏览器' }}</span></div></div>
+        <label v-if="dataMode === 'cloud'" class="field"><span>访问密钥</span><div class="input-with-icon"><KeyRound :size="18" /><input v-model="accessKey" type="password" autocomplete="current-password" placeholder="云函数环境变量 APP_ACCESS_KEY" /></div></label>
+        <p v-if="dataMode === 'cloud'" class="form-hint form-hint--info">云函数地址：<code>{{ apiEndpoint || '未配置' }}</code>{{ cloudEnvId ? ` · 环境 ${cloudEnvId}` : '' }}</p>
+        <p v-if="connection.message" class="form-hint" :class="connection.type === 'error' ? '' : 'form-hint--ok'">{{ connection.message }}</p>
         <div class="backup-actions"><button class="button" type="button" @click="downloadBackup(state.data)"><Download :size="17" />导出备份</button><button class="button" type="button" @click="importInput.click()"><Upload :size="17" />导入备份</button><input ref="importInput" class="sr-only" type="file" accept="application/json,.json" @change="importBackup" /></div>
-        <div class="form-actions"><button class="button" type="button" @click="settingsOpen = false">关闭</button><button v-if="dataMode === 'remote'" class="button button--primary" type="submit">保存并刷新</button></div>
+        <div class="form-actions"><button class="button" type="button" @click="settingsOpen = false">关闭</button><button v-if="dataMode === 'cloud'" class="button" type="button" :disabled="connection.testing" @click="runConnectionTest"><RefreshCw :size="16" :class="{ spin: connection.testing }" />测试连接</button><button v-if="dataMode === 'cloud'" class="button button--primary" type="submit">保存并刷新</button></div>
       </form>
     </ModalDialog>
 

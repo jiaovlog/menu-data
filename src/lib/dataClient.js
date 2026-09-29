@@ -2,6 +2,7 @@ import { DEMO_DATA } from './defaultData.js'
 
 const DATA_KEY = 'menu-data:content:v1'
 const ACCESS_KEY = 'menu-data:access-key'
+const DEV_APP_KEY = import.meta.env.VITE_DEV_APP_KEY?.trim() || 'local-dev-key'
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
@@ -15,15 +16,81 @@ function validateData(data) {
   return data
 }
 
-export const dataMode = import.meta.env.VITE_DATA_MODE === 'remote' ? 'remote' : 'local'
-const API_URL = import.meta.env.VITE_API_URL?.trim() || '/api/data'
+/** local: 只用浏览器 localStorage；cloud: 走腾讯云 CloudBase 云函数 + 文档型数据库 */
+export const dataMode = import.meta.env.VITE_DATA_MODE === 'local' ? 'local' : 'cloud'
+export const cloudEnvId = import.meta.env.VITE_TCB_ENV_ID?.trim() || ''
+
+function resolveEndpoint() {
+  const explicit = import.meta.env.VITE_API_URL?.trim()
+  if (explicit) return explicit
+  // 本地开发：由 vite 插件 dev/cloudbaseLocalApi.js 提供同款云函数接口
+  if (import.meta.env.DEV) return '/api/data'
+  if (cloudEnvId) {
+    const raw = import.meta.env.VITE_TCB_SERVICE_PATH?.trim() || '/menuApi'
+    return `https://${cloudEnvId}.service.tcloudbase.com${raw.startsWith('/') ? raw : `/${raw}`}`
+  }
+  return ''
+}
+
+export const apiEndpoint = dataMode === 'cloud' ? resolveEndpoint() : ''
+
+function endpoint() {
+  if (!apiEndpoint) {
+    throw new Error('未配置云函数访问地址：请在构建时设置 VITE_TCB_ENV_ID 或 VITE_API_URL')
+  }
+  return apiEndpoint
+}
+
+function accessKeyValue() {
+  const stored = localStorage.getItem(ACCESS_KEY) || ''
+  if (stored) return stored
+  return import.meta.env.DEV ? DEV_APP_KEY : ''
+}
 
 export function getAccessKey() {
-  return localStorage.getItem(ACCESS_KEY) || ''
+  return accessKeyValue()
 }
 
 export function setAccessKey(value) {
   localStorage.setItem(ACCESS_KEY, value.trim())
+}
+
+export function clearAccessKey() {
+  localStorage.removeItem(ACCESS_KEY)
+}
+
+async function requestCloud(options = {}) {
+  const url = endpoint()
+  let response
+  try {
+    response = await fetch(url, {
+      method: options.method || 'GET',
+      headers: {
+        'X-App-Key': accessKeyValue(),
+        ...(options.body ? { 'Content-Type': 'application/json' } : {})
+      },
+      body: options.body
+    })
+  } catch (error) {
+    throw new Error(`无法连接云函数（${url}）：${error.message}`)
+  }
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    if (response.status === 401) throw new Error(payload.message || '访问密钥不正确')
+    if (response.status === 409) {
+      const error = new Error(payload.message || '数据已被另一台手机修改，请刷新后重试')
+      error.code = 'CONFLICT'
+      throw error
+    }
+    throw new Error(payload.message || `云函数请求失败（${response.status}）`)
+  }
+  return payload
+}
+
+export async function testConnection() {
+  const payload = await requestCloud()
+  return { revision: payload.revision, data: validateData(payload.data) }
 }
 
 export async function loadData() {
@@ -37,11 +104,7 @@ export async function loadData() {
     return { data: validateData(JSON.parse(stored)), revision: `local-${Date.now()}` }
   }
 
-  const response = await fetch(API_URL, {
-    headers: { 'X-App-Key': getAccessKey() }
-  })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload.message || '读取远程数据失败')
+  const payload = await requestCloud()
   return { data: validateData(payload.data), revision: payload.revision }
 }
 
@@ -52,21 +115,7 @@ export async function saveData(data, revision) {
     return { revision: `local-${Date.now()}` }
   }
 
-  const response = await fetch(API_URL, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-App-Key': getAccessKey()
-    },
-    body: JSON.stringify({ data, revision })
-  })
-  const payload = await response.json().catch(() => ({}))
-  if (response.status === 409) {
-    const error = new Error('数据已被另一台手机修改，请刷新后重试')
-    error.code = 'CONFLICT'
-    throw error
-  }
-  if (!response.ok) throw new Error(payload.message || '保存远程数据失败')
+  const payload = await requestCloud({ method: 'PUT', body: JSON.stringify({ data, revision }) })
   return { revision: payload.revision }
 }
 
