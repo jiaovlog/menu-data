@@ -106,8 +106,6 @@ body { min-width: 320px; background: #f5f7f5; }
 .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; padding-top: 4px; }
 .form-hint { margin: -7px 0 0; color: var(--danger); font-size: 12px; }
-.form-hint--info { color: var(--muted); }
-.form-hint--info code { font-size: 11px; word-break: break-all; }
 .form-hint--ok { color: var(--green); }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .switch-row span { display: grid; gap: 4px; }

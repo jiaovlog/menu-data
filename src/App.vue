@@ -8,7 +8,7 @@ import RecipesPage from './pages/RecipesPage.vue'
 import OrdersPage from './pages/OrdersPage.vue'
 import ShoppingPage from './pages/ShoppingPage.vue'
 import { EMPTY_DATA } from './lib/defaultData.js'
-import { apiEndpoint, cloudEnvId, dataMode, downloadBackup, getAccessKey, loadData, parseBackup, saveData, setAccessKey, testConnection } from './lib/dataClient.js'
+import { dataMode, downloadBackup, getAccessKey, loadData, parseBackup, saveData, setAccessKey, testConnection } from './lib/dataClient.js'
 import { makeId } from './lib/ids.js'
 
 const tabs = [
@@ -215,7 +215,6 @@ onMounted(refresh)
       <form class="form-stack" @submit.prevent="saveSettings">
         <div class="setting-mode"><component :is="dataMode === 'cloud' ? Wifi : WifiOff" :size="20" /><div><strong>{{ dataMode === 'cloud' ? '云端同步模式' : '本机模式' }}</strong><span>{{ dataMode === 'cloud' ? '腾讯云 CloudBase 云函数 + 文档型数据库' : '数据仅保存在当前浏览器' }}</span></div></div>
         <label v-if="dataMode === 'cloud'" class="field"><span>访问密钥</span><div class="input-with-icon"><KeyRound :size="18" /><input v-model="accessKey" type="password" autocomplete="current-password" placeholder="云函数环境变量 APP_ACCESS_KEY" /></div></label>
-<!--        <p v-if="dataMode === 'cloud'" class="form-hint form-hint&#45;&#45;info">云函数地址：<code>{{ apiEndpoint || '未配置' }}</code>{{ cloudEnvId ? ` · 环境 ${cloudEnvId}` : '' }}</p>-->
         <p v-if="connection.message" class="form-hint" :class="connection.type === 'error' ? '' : 'form-hint--ok'">{{ connection.message }}</p>
         <div class="backup-actions"><button class="button" type="button" @click="downloadBackup(state.data)"><Download :size="17" />导出备份</button><button class="button" type="button" @click="importInput.click()"><Upload :size="17" />导入备份</button><input ref="importInput" class="sr-only" type="file" accept="application/json,.json" @change="importBackup" /></div>
         <div class="form-actions"><button class="button" type="button" @click="settingsOpen = false">关闭</button><button v-if="dataMode === 'cloud'" class="button" type="button" :disabled="connection.testing" @click="runConnectionTest"><RefreshCw :size="16" :class="{ spin: connection.testing }" />测试连接</button><button v-if="dataMode === 'cloud'" class="button button--primary" type="submit">保存并刷新</button></div>
